@@ -22,7 +22,7 @@ def add_cardds(url):
 
         response = requests.post(url, headers=headers, json=data)
 
-        if response.status_code in [200, 201]:
+        if response.status_code  == 200:
             card = response.json()
             print(f"\nCard created successfully!")
             print(f"Card_token: {card['token']}")
@@ -136,3 +136,4 @@ save_to_txt(total_cards, fake_card_list)
 
 with open("Total_information.txt", "r") as f:
     print(f.read())
+
