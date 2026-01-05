@@ -109,5 +109,6 @@ save_to_txt(total_cards, fake_card_list)
 with open("Total_information.txt", "r") as f:
     print(f.read())
 
-with open("Total_information.txt", "r") as f:
-    print(f.read())
+# with open("Total_information.txt", "r") as f:
+#     print(f.read())
+
