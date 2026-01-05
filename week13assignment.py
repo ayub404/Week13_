@@ -1,130 +1,113 @@
 import requests
-import time
 
-print("                  Welcome to URL + Crypto Checker                  ")
-print("------------------------------------------------------------------------")
+urll = "https://sandbox.lithic.com/v1/cards"
+json__url = "https://jsonplaceholder.typicode.com/posts"
 
-url_ = input("Enter a URL to check (VirusTotal): ").strip()
-asset = input("Type the asset to check (BTC, USD, XAU): ").strip().upper()
+def add_cardds(url):
+    card_name = input("Enter a card name: ")
+    card_type = input("Enter your card type: ").strip().upper()
+    spend_limit = int(input("Enter a limit (Spend limit): "))
 
-url = "f5cef0b12607375a6b672ca04cfd20e93d6204428779318f51bd32de67b786f0"
-header = {"apikey": url}
+    data = {
+        'memo': card_name,
+        'type': card_type,
+        'spend_limit': spend_limit
+    }
 
-def virus_total_scan(url):
-    try:
-        response = requests.post(
-            "https://www.virustotal.com/api/v3/urls",
-            headers = header,
-            data={"url": url}
-        )
-        if response.status_code == 200:
-            analysis_id = response.json()["data"]["id"]
-            time.sleep(5)
-            result_response = requests.get(
-                f"https://www.virustotal.com/api/v3/analyses/{analysis_id}",
-                headers = header
-            )
-            if result_response.status_code == 200:
-                stats = result_response.json()
-                stats = ["data"]["attributes"]["stats"]
-                harmless = stats.get("harmless", 0)
-                suspicious = stats.get("suspicious", 0)
-                malicious = stats.get("malicious", 0)
+    headers = {
+        "Authorization": "b208e6eb-0394-4641-aa63-e1e1c77c4124",
+        "Content-Type": "application/json"
+    }
 
-                if malicious > 0:
-                    status = "Dangerous"
-                    advice = "Do NOT open this link."
-                elif suspicious > 0:
-                    status = "Suspicious"
-                    advice = "Be careful before visiting."
-                else:
-                    status = "Safe"
-                    advice = "This link appears safe."
-
-                return {
-                    "harmless": harmless,
-                    "suspicious": suspicious,
-                    "malicious": malicious,
-                    "status": status,
-                    "advice": advice
-                }
-            else:
-                print(f"Error fetching VirusTotal result. Status code: {result_response.status_code}")
-                return None
-        else:
-            print(f"Error submitting URL to VirusTotal. Status code: {response.status_code}")
-            return None
-    except:
-        print("VirusTotal API error.")
+    response = requests.post(url, headers=headers, json=data)
+    if response.status_code in [200, 201]:
+        
+        card = response.json()  
+        print(f"\nCard created successfully!")
+        print(f"Card_token: {card['token']}")
+        print(f"Last four: {card['last_four']}")
+        print(f"Card type: {card['type']}")
+        print(f"Status(Open or Closed): {card['state']}")
+        return card
+    else:
+        print("We could not create a card!")
+        print(response.status_code)
         return None
 
-def crypto_price(asset_symbol):
-    try:
-        url = "https://api.coingecko.com/api/v3/simple/price"
-        params = {"ids": "", "vs_currencies": "usd"}
-        if asset_symbol == "BTC":
-            params["ids"] = "bitcoin"
-        elif asset_symbol == "XAU":
-            params["ids"] = "tether-gold"
-        elif asset_symbol == "USD":
-            params["ids"] = "usd-coin"
-        else:
-            print("Asset not supported.")
-            return None
 
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            data = response.json()
-            price = list(data.values())[0]["usd"]
-            return price
-        else:
-            print(f"Error, Status code: {response.status_code}")
-            return None
-    except:
-        print("Could not connect to CoinGecko.")
+def json_fake_card(url):
+    name = input("Which name you put to your card: ")
+    data = {
+        "title": f"New card created: {name}",
+        "body": f"Card {name} was created in Lithic Sandbox",
+        "userId": 1
+    }
+    response = requests.post(url, json=data)
+    if response.status_code == 201:
+        print("Logged card to JSONPlaceholder:", response.json()['title'])
+        return response.json()
+    else:
+        print("Failed to log card!")
         return None
 
-def display_results(vt_data, asset, price, url):
-    print("\n--------------------- VirusTotal Result ---------------------")
-    if vt_data:
-        print(f"URL: {url}")
-        print(f"Harmless:    {vt_data['harmless']}")
-        print(f"Suspicious:  {vt_data['suspicious']}")
-        print(f"Malicious:   {vt_data['malicious']}")
-        print(f"Status:      {vt_data['status']}")
-        print(f"Advice:      {vt_data['advice']}")
+
+def card_info(url):
+    headers = {
+        "Authorization": "b208e6eb-0394-4641-aa63-e1e1c77c4124",
+        "Content-Type": "application/json"
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        print("-" * 60)
+        print("                     Card details ")
+        for card in data['data']:
+            print(f"\nCard name is {card['memo']}")
+            print(f"Card type: {card['type']}")
+            print(f"Card currency: {card['cardholder_currency']}")
+            print(f"card_token: {card['token']}")
+        print(f"\nAccount token: {data['data'][0]['account_token']}")
+        print("-" * 50)
+        print(f"Total number of cards: {len(data['data'])}")
+        return data['data']
     else:
-        print("No VirusTotal data.")
+        print("Failed to fetch cards:", response.status_code)
+        return []
 
-    print("\n--------------------- Crypto Price Result --------------------")
-    if price is not None:
-        print(f"{asset} price in USD: ${price}")
-    else:
-        print("No price data available.")
+def save_to_txt(cards, fake_cards, filename="Total_information.txt"):
+    with open(filename, "a") as f:
+        f.write("\n" + "=" * 50 + "\n")
+        f.write("\nHere you find All the card details")
+        f.write("=" * 50 + "\n")
+        for card in cards:
+            f.write("Source: Lithic\n")
+            f.write(f"Card Name: {card.get('memo','')}\n")
+            f.write(f"Card Type: {card.get('type','')}\n")
+            f.write(f"Last Four: {card.get('last_four','')}\n")
+            f.write(f"Token: {card.get('token','')}\n")
+            f.write(f"Status: {card.get('state','')}\n")
+            f.write(f"Currency: {card.get('cardholder_currency','')}\n")
+            f.write("-"*30 + "\n")
 
-    try:
-        with open("multi_api_report.txt", "w") as f:
-            f.write("Multi API Report\n")
-            f.write("-----------------\n")
-            f.write("VirusTotal Result:\n")
-            if vt_data:
-                f.write(f"URL: {url}\n")
-                f.write(f"Harmless: {vt_data['harmless']}\n")
-                f.write(f"Suspicious: {vt_data['suspicious']}\n")
-                f.write(f"Malicious: {vt_data['malicious']}\n")
-                f.write(f"Status: {vt_data['status']}\n")
-                f.write(f"Advice: {vt_data['advice']}\n")
-            else:
-                f.write("No VirusTotal data.\n")
-            f.write("\nCrypto Price Result:\n")
-            if price is not None:
-                f.write(f"{asset} price in USD: {price}\n")
-            else:
-                f.write("No price data available.\n")
-        print("\nSaved to multi_api_report.txt")
-    except:
-        print("Could not save file.")
+        for log in fake_cards:
+            f.write("Source: JSONPlaceholder\n")
+            f.write(f"Title: {log.get('title','')}\n")
+            f.write(f"Body: {log.get('body','')}\n")
+            f.write(f"ID: {log.get('id','')}\n")
+            f.write("-"*30 + "\n")
 
-result1 = virus_total_scan(url_)
-price = crypto_price(asset)
-display_results(result1, asset, price, url_)
+    print(f"\nSaved all data to {filename}")
+
+card = add_cardds(urll)
+fake_card = json_fake_card(json__url)
+total_cards = card_info(urll)
+fake_card_list = []
+
+if fake_card:
+    fake_card_list.append(fake_card)
+save_to_txt(total_cards, fake_card_list)
+with open("Total_information.txt", "r") as f:
+    print(f.read())
+
+with open("Total_information.txt", "r") as f:
+    print(f.read())
